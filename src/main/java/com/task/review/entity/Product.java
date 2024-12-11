@@ -1,8 +1,15 @@
 package com.task.review.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
+@Getter
+@Setter
+@Table(name = "product") // 매핑할 테이블의 이름을 지정
+@NoArgsConstructor
 public class Product {
 
     @Id
@@ -14,4 +21,8 @@ public class Product {
 
     private double score;
 
+    public void update(long reviewCount, double newScore) {
+        this.reviewCount = reviewCount;
+        this.score = newScore;
+    }
 }
