@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: springtest
+  datasource:
+    url: jdbc:mysql://springboot-database-test.cre8qg4s62a9.ap-northeast-2.rds.amazonaws.com:3306/springtest
+    username: root
+    password: 1!wjdslttl
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        show_sql: true
+        format_sql: true
+        use_sql_comments: true
