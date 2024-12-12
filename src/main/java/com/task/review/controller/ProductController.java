@@ -1,16 +1,14 @@
 package com.task.review.controller;
 
-import com.task.review.dto.CursorResult;
 import com.task.review.dto.ProductResponseDto;
 import com.task.review.dto.ReviewRequestDto;
 import com.task.review.dto.ReviewResponseDto;
 import com.task.review.service.ProductService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.awt.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/products")
@@ -21,10 +19,10 @@ public class ProductController {
 
     private final ProductService productService;
 
-    @PostMapping("/{productId}/reviews")
-    public ResponseEntity<?> createReview(@PathVariable Long productId, @RequestBody ReviewRequestDto requestDto) {
-
-        ReviewResponseDto reviewResponseDto = productService.createReview(productId, requestDto);
+    @PostMapping(value = "/{productId}/reviews", consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.MULTIPART_FORM_DATA_VALUE})
+    public ResponseEntity<?> createReview(@PathVariable Long productId, @RequestPart ReviewRequestDto requestDto,
+    @RequestPart(value="image", required = false) MultipartFile file) {
+        ReviewResponseDto reviewResponseDto = productService.createReview(productId, requestDto, file);
 
         return ResponseEntity.ok(reviewResponseDto);
     }

@@ -12,6 +12,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -21,9 +22,10 @@ public class ProductService {
 
     private final ReviewRepository reviewRepository;
     private final ProductRepository productRepository;
+    private final S3ImageUploadDummyService imageService;
 
     @Transactional
-    public ReviewResponseDto createReview(Long productId, ReviewRequestDto requestDto) {
+    public ReviewResponseDto createReview(Long productId, ReviewRequestDto requestDto, MultipartFile file) {
         // 상품이 없으면 리뷰 저장 못 함
         Product product = productRepository.findById(productId).orElseThrow(() ->
                 new NullPointerException("해당 상품을 찾을 수 없습니다.")
@@ -33,6 +35,12 @@ public class ProductService {
         List<Review> reviews = reviewRepository.findAllByProductAndUserId(product, requestDto.getUserId());
         if(!reviews.isEmpty()) {
             throw new IllegalArgumentException("이미 해당 상품에 리뷰를 작성하였습니다.");
+        }
+
+        // 이미지 파일 S3에 저장(dummy)
+        if(file != null) {
+            String imageUrl =imageService.upploadImageToS3(file);
+            requestDto.setImageUrl(imageUrl);
         }
 
         // 리뷰 저장
