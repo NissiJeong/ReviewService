@@ -1,5 +1,7 @@
 package com.task.review.service;
 
+import com.task.review.dto.CursorResult;
+import com.task.review.dto.ProductResponseDto;
 import com.task.review.dto.ReviewRequestDto;
 import com.task.review.dto.ReviewResponseDto;
 import com.task.review.entity.Product;
@@ -7,8 +9,12 @@ import com.task.review.entity.Review;
 import com.task.review.repository.ProductRepository;
 import com.task.review.repository.ReviewRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -33,5 +39,29 @@ public class ProductService {
         product.update(product.getReviewCount()+1, newScore);
 
         return new ReviewResponseDto(review);
+    }
+
+    public ProductResponseDto getReviews(Long productId, Long cursor, int pageSize) {
+        // cursor가 0 인경우 최근 데이터부터 가져오도록
+        if(cursor == null || cursor == 0) cursor = Long.MAX_VALUE;
+
+        Pageable pageable = PageRequest.of(0, pageSize); //한 번에 가져올 크기
+
+        // 상품이 없으면 조회 되지 않도록
+        Product product = productRepository.findById(productId).orElseThrow(() ->
+                new NullPointerException("해당 상품을 찾을 수 없습니다.")
+        );
+        ProductResponseDto responseDto = new ProductResponseDto(product);
+
+        // 커서 값이 1인 경우 리턴될 리뷰가 없음.
+        if(cursor == 1) {
+            return responseDto;
+        }
+        List<Review> reviews = reviewRepository.findByProductIdAndIdLessThanOrderByIdDesc(productId, cursor, pageable);
+
+        List<ReviewResponseDto> reviewResponseList = reviews.stream().map(ReviewResponseDto::new).toList();
+        responseDto.setReviews(reviewResponseList);
+        responseDto.setCursor(reviews.get(reviews.size()-1).getId());
+        return responseDto;
     }
 }
