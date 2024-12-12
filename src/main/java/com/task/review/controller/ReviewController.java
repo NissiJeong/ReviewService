@@ -28,7 +28,7 @@ public class ReviewController {
         return ResponseEntity.ok(reviewResponseDto);
     }
 
-    @GetMapping("/{productId}/reviews")
+    @GetMapping(value = "/{productId}/reviews")
     public ResponseEntity<?> getReviews(@PathVariable Long productId, @RequestParam("cursor") Long cursor, @RequestParam("size") Integer size) {
         if(size == null) size = DEFAULT_SIZE;
         ProductResponseDto result = productService.getReviews(productId, cursor, size);
