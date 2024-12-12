@@ -6,6 +6,7 @@ import com.task.review.dto.ReviewResponseDto;
 import com.task.review.entity.Product;
 import com.task.review.entity.Review;
 import com.task.review.repository.ProductRepository;
+import com.task.review.repository.RedisRepository;
 import com.task.review.repository.ReviewRepository;
 import lombok.RequiredArgsConstructor;
 import org.redisson.api.RLock;
@@ -18,6 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.redisson.api.RedissonClient;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -27,6 +29,7 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final ProductRepository productRepository;
     private final S3ImageUploadDummyService imageService;
+    private final RedisRepository redisRepository;
 
     private final RedissonClient redissonClient;
 
@@ -61,17 +64,20 @@ public class ReviewService {
                 requestDto.setImageUrl(imageUrl);
             }
 
+            // Redis 에 리뷰 데이터 업데이트
+            redisRepository.incrementReviewData(productId, requestDto.getScore());
+
             // 리뷰 저장
             Review review = reviewRepository.save(new Review(requestDto, product));
 
             // 리뷰 저장 후 프로덕트 리뷰수, 스코어 업데이트
             // 리뷰수는  +1 하면 되고 스코어 = ((스코어*리뷰수) + 입력된 스코어) / 리뷰수 + 1);
-            double newScore = (product.getScore()*product.getReviewCount()+ requestDto.getScore())/(product.getReviewCount()+1);
-            product.update(product.getReviewCount()+1, newScore);
+            //double newScore = (product.getScore()*product.getReviewCount()+ requestDto.getScore())/(product.getReviewCount()+1);
+            //product.update(product.getReviewCount()+1, newScore);
 
             // 리뷰카운트, 스코어 업데이트 될때마다 바로 db 반영.
             // 트랜잭션이 커밋되기 전에 다른 스레드가 잡아버리면 문제가 발생할 수 있음.
-            productRepository.saveAndFlush(product);
+            //productRepository.saveAndFlush(product);
 
             return new ReviewResponseDto(review);
         } catch (InterruptedException e) {
@@ -92,6 +98,18 @@ public class ReviewService {
         Product product = productRepository.findById(productId).orElseThrow(() ->
                 new NullPointerException("해당 상품을 찾을 수 없습니다.")
         );
+
+        // Redis 에서 프로덕트 id 값으로 리뷰 카운트, 리뷰 스코어 가져오기
+        Map<String, Long> reviewInfo = redisRepository.getReviewData(product.getId());
+        // Redis 에서 가져온 값이 있으면 product update
+        if(reviewInfo.get("reviewCount") != null && reviewInfo.get("scoreSum") != null) {
+            long reviewCount = reviewInfo.get("reviewCount");
+            long scoreSum = reviewInfo.get("scoreSum");
+            double score = scoreSum / (double) reviewCount;
+            product.setReviewCount(reviewCount);
+            product.setScore(score);
+        }
+
         ProductResponseDto responseDto = new ProductResponseDto(product);
 
         // 커서 값이 1인 경우 리턴될 리뷰가 없음.
