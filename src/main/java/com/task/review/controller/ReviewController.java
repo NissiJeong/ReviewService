@@ -3,7 +3,7 @@ package com.task.review.controller;
 import com.task.review.dto.ProductResponseDto;
 import com.task.review.dto.ReviewRequestDto;
 import com.task.review.dto.ReviewResponseDto;
-import com.task.review.service.ProductService;
+import com.task.review.service.ReviewService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -13,11 +13,11 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/products")
 @RequiredArgsConstructor
-public class ProductController {
+public class ReviewController {
 
     private static final int DEFAULT_SIZE = 10;
 
-    private final ProductService productService;
+    private final ReviewService productService;
 
     @PostMapping(value = "/{productId}/reviews", consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.MULTIPART_FORM_DATA_VALUE})
     public ResponseEntity<?> createReview(@PathVariable Long productId, @RequestPart ReviewRequestDto requestDto,
