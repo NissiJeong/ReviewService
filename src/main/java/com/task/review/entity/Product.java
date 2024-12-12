@@ -2,7 +2,7 @@ package com.task.review.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.ArrayList;
@@ -12,7 +12,7 @@ import java.util.List;
 @Getter
 @Setter
 @Table(name = "product") // 매핑할 테이블의 이름을 지정
-@RequiredArgsConstructor
+@NoArgsConstructor
 public class Product {
 
     @Id
