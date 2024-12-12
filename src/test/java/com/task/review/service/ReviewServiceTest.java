@@ -71,7 +71,10 @@ public class ReviewServiceTest {
             int finalI = i;
             executorService.submit(() -> {
                try {
+                   System.out.println("finalI= "+finalI);
                    reviewService.createReview(product.getId(), new ReviewRequestDto((long) finalI, 5, "content", null), null);
+               } catch (Exception e) {
+                   System.err.println("Thread " + finalI + " failed: " + e.getMessage());
                } finally {
                    latch.countDown();
                }
