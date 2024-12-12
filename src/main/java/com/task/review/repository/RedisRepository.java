@@ -1,15 +1,18 @@
 package com.task.review.repository;
 
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 @Component
+@RequiredArgsConstructor
 public class RedisRepository {
-    private RedisTemplate<String, String> redisTemplate;
+    private final RedisTemplate<String, String> redisTemplate;
 
     public void incrementReviewData(Long productId, int score) {
         String reviewCountKey = "product:"+productId+":reviewCount";
@@ -38,5 +41,17 @@ public class RedisRepository {
         reviewData.put("scoreSum", scoreSum);
 
         return reviewData;
+    }
+
+    public void deleteReviewInfo(Long productId) {
+        String reviewCountKey = "product:" + productId + ":reviewCount";
+        String scoreSumKey = "product:" + productId + ":scoreSum";
+
+        redisTemplate.delete(reviewCountKey);
+        redisTemplate.delete(scoreSumKey);
+    }
+
+    public Set<String> getProductReviewKey() {
+        return redisTemplate.keys("product:*:reviewCount");
     }
 }

@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.redisson.api.RLock;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +21,7 @@ import org.redisson.api.RedissonClient;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -70,15 +72,6 @@ public class ReviewService {
             // 리뷰 저장
             Review review = reviewRepository.save(new Review(requestDto, product));
 
-            // 리뷰 저장 후 프로덕트 리뷰수, 스코어 업데이트
-            // 리뷰수는  +1 하면 되고 스코어 = ((스코어*리뷰수) + 입력된 스코어) / 리뷰수 + 1);
-            //double newScore = (product.getScore()*product.getReviewCount()+ requestDto.getScore())/(product.getReviewCount()+1);
-            //product.update(product.getReviewCount()+1, newScore);
-
-            // 리뷰카운트, 스코어 업데이트 될때마다 바로 db 반영.
-            // 트랜잭션이 커밋되기 전에 다른 스레드가 잡아버리면 문제가 발생할 수 있음.
-            //productRepository.saveAndFlush(product);
-
             return new ReviewResponseDto(review);
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
@@ -122,5 +115,51 @@ public class ReviewService {
         responseDto.setReviews(reviewResponseList);
         responseDto.setCursor(reviews.get(reviews.size()-1).getId());
         return responseDto;
+    }
+
+    @Scheduled(fixedRate = 60000)
+    @Transactional
+    public void syncRedisToMySQL() {
+        String lockKey = "lock:sync:product";
+        RLock lock = redissonClient.getLock(lockKey);
+
+        try {
+            // 락 획득 시도
+            if (lock.tryLock(10, 5, TimeUnit.SECONDS)) {
+                // Redis에서 동기화할 키 조회
+                Set<String> keys = redisRepository.getProductReviewKey();
+                if (keys == null || keys.isEmpty()) return;
+
+                for (String key : keys) {
+                    Long productId = Long.valueOf(key.split(":")[1]);
+                    syncProductData(productId);
+                }
+            } else {
+                System.out.println("동기화 작업 중복 실행 방지됨");
+            }
+        } catch (InterruptedException e) {
+            throw new RuntimeException("동기화 중 락 획득 실패", e);
+        } finally {
+            // 락 해제
+            if (lock.isHeldByCurrentThread()) {
+                lock.unlock();
+            }
+        }
+
+    }
+
+    private void syncProductData(Long productId) {
+        Map<String, Long> reviewInfo = redisRepository.getReviewData(productId);
+        long reviewCount = reviewInfo.get("reviewCount") == null? 0L : reviewInfo.get("reviewCount");
+        long scoreSum = reviewInfo.get("scoreSum") == null? 0L : reviewInfo.get("scoreSum");
+
+        Product product = productRepository.findById(productId).orElseThrow();
+        double newScore = reviewCount > 0 ? scoreSum / (double) reviewCount : 0.0;
+
+        product.update(reviewCount, newScore);
+        productRepository.save(product);
+
+        // Redis 데이터 초기화
+        redisRepository.deleteReviewInfo(productId);
     }
 }
