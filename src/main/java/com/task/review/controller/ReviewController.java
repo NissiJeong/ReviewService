@@ -4,6 +4,7 @@ import com.task.review.dto.ProductResponseDto;
 import com.task.review.dto.ReviewRequestDto;
 import com.task.review.dto.ReviewResponseDto;
 import com.task.review.service.ReviewService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -20,7 +21,7 @@ public class ReviewController {
     private final ReviewService productService;
 
     @PostMapping(value = "/{productId}/reviews", consumes = {MediaType.APPLICATION_JSON_VALUE, MediaType.MULTIPART_FORM_DATA_VALUE})
-    public ResponseEntity<?> createReview(@PathVariable Long productId, @RequestPart ReviewRequestDto requestDto,
+    public ResponseEntity<?> createReview(@PathVariable Long productId, @Valid @RequestPart ReviewRequestDto requestDto,
     @RequestPart(value="image", required = false) MultipartFile file) {
         ReviewResponseDto reviewResponseDto = productService.createReview(productId, requestDto, file);
 
