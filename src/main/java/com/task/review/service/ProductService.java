@@ -1,6 +1,5 @@
 package com.task.review.service;
 
-import com.task.review.dto.CursorResult;
 import com.task.review.dto.ProductResponseDto;
 import com.task.review.dto.ReviewRequestDto;
 import com.task.review.dto.ReviewResponseDto;
@@ -29,6 +28,12 @@ public class ProductService {
         Product product = productRepository.findById(productId).orElseThrow(() ->
                 new NullPointerException("해당 상품을 찾을 수 없습니다.")
         );
+
+        // 해당 유저가 이미 상품 리뷰를 작성했으면 못하게 처리
+        List<Review> reviews = reviewRepository.findAllByProductAndUserId(product, requestDto.getUserId());
+        if(!reviews.isEmpty()) {
+            throw new IllegalArgumentException("이미 해당 상품에 리뷰를 작성하였습니다.");
+        }
 
         // 리뷰 저장
         Review review = reviewRepository.save(new Review(requestDto, product));

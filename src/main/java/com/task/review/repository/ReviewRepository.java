@@ -11,5 +11,5 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
 
     List<Review> findByProductIdAndIdLessThanOrderByIdDesc(Long productId, Long cursorId, Pageable pageable);
 
-    Boolean existsByProductIdAndIdGreaterThan(Long productId, Long id);
+    List<Review> findAllByProductAndUserId(Product product, Long userId);
 }
