@@ -18,7 +18,7 @@ services:
       - test_network
 
   application:
-    container_name: docker-compose-test
+    container_name: docker-review
     restart: on-failure
     build:
       context: ./
@@ -29,8 +29,20 @@ services:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql_db:3306/review?useSSL=false&allowPublicKeyRetrieval=true
       SPRING_DATASOURCE_USERNAME: "root"
       SPRING_DATASOURCE_PASSWORD: "1234"
+      SPRING_REDIS_HOST: redis
+      SPRING_REDIS_PORT: 6379
     depends_on:
       - database
+      - redis
+    networks:
+      - test_network
+
+  redis:
+    container_name: redis
+    image: redis:latest
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
     networks:
       - test_network
 
