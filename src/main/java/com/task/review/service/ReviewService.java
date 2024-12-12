@@ -117,6 +117,7 @@ public class ReviewService {
         return responseDto;
     }
 
+    // 1분에 한번씩 Redis, MySQL 동기화 작업
     @Scheduled(fixedRate = 60000)
     @Transactional
     public void syncRedisToMySQL() {
